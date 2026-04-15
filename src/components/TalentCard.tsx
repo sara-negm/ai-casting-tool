@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { Ranking, Talent } from '../types';
 import { followerLabel } from '../utils/followers';
+import { profileUrl } from '../utils/socialLinks';
 import { generateEmail } from '../api/generateEmail';
+import { researchTalent } from '../api/researchTalent';
 
 interface Props {
   talent: Talent;
@@ -21,6 +23,10 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  const [researchText, setResearchText] = useState('');
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchError, setResearchError] = useState('');
 
   const isTop = !!ranking && ranking.score >= 85;
   const isGood = !!ranking && ranking.score >= 70 && ranking.score < 85;
@@ -49,6 +55,24 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
     }
   }
 
+  async function handleResearch() {
+    if (!apiKey.trim()) {
+      setResearchError('Enter your Anthropic API key above to research creators.');
+      return;
+    }
+    setResearchError('');
+    setResearchLoading(true);
+    setResearchText('');
+    try {
+      const text = await researchTalent({ talent, apiKey: apiKey.trim() });
+      setResearchText(text);
+    } catch (err) {
+      setResearchError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setResearchLoading(false);
+    }
+  }
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(emailText);
@@ -62,6 +86,11 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
   function handleDismiss() {
     setEmailText('');
     setEmailError('');
+  }
+
+  function handleDismissResearch() {
+    setResearchText('');
+    setResearchError('');
   }
 
   return (
@@ -82,6 +111,7 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
         <div className="card-identity">
           <p className="name">{talent.name}</p>
           <p className="handle">{talent.handle}</p>
+          <p className="past-brands">Past brands: {talent.pastBrands.join(', ')}</p>
         </div>
       </div>
 
@@ -107,11 +137,25 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
       </div>
 
       <div className="meta">
-        <p>Past brands: {talent.pastBrands.join(', ')}</p>
         <p>{talent.audienceDemographic}</p>
       </div>
 
       <div className="card-actions">
+        <a
+          className="link-btn"
+          href={profileUrl(talent)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View profile ↗
+        </a>
+        <button
+          className="link-btn"
+          onClick={handleResearch}
+          disabled={researchLoading}
+        >
+          {researchLoading ? 'Researching…' : '🔎 Research with AI'}
+        </button>
         <button
           className="generate-btn"
           onClick={handleGenerate}
@@ -125,6 +169,22 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
         <div className={`ai-reason${isTop ? ' top' : ''}`}>
           <p className="ai-reason-label">AI reason · {ranking.score}/100</p>
           <p className="ai-reason-text">{ranking.reason}</p>
+        </div>
+      )}
+
+      {researchError && (
+        <div className="research-summary error">
+          <p>{researchError}</p>
+        </div>
+      )}
+
+      {researchText && (
+        <div className="research-summary">
+          <div className="research-summary-header">
+            <p className="research-summary-label">Web research · {talent.name}</p>
+            <button className="email-dismiss" onClick={handleDismissResearch} aria-label="Dismiss">×</button>
+          </div>
+          <pre className="research-summary-text">{researchText}</pre>
         </div>
       )}
 
