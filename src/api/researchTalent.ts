@@ -1,8 +1,8 @@
 import type { Talent } from '../types';
+import { getApiKey } from './apiKey';
 
 interface ResearchTalentOptions {
   talent: Talent;
-  apiKey: string;
 }
 
 interface ClaudeContentBlock {
@@ -28,17 +28,17 @@ Use web search to find current information about:
 Return a concise research brief as 4-6 short bullet points. Be specific and factual — cite dates and numbers when you find them. If the web search does not return information about a particular question, explicitly say "no public information found" for that bullet rather than speculating. Do not include a preamble or closing — just the bullets. Start each bullet with "• ".`;
 }
 
-export async function researchTalent({ talent, apiKey }: ResearchTalentOptions): Promise<string> {
+export async function researchTalent({ talent }: ResearchTalentOptions): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': getApiKey(),
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
       messages: [{ role: 'user', content: buildPrompt(talent) }],

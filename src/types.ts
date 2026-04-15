@@ -24,7 +24,8 @@ export interface Talent {
 export interface Ranking {
   id: number;
   score: number;
-  reason: string;
+  highlights: string[];
+  comparative: string;
 }
 
 export type RankingMap = Record<number, Ranking>;

@@ -1,8 +1,8 @@
 import type { Talent } from '../types';
+import { getApiKey } from './apiKey';
 
 interface GenerateEmailOptions {
   talent: Talent;
-  apiKey: string;
   context?: string;
 }
 
@@ -39,17 +39,17 @@ Write a personalized, warm, 4-6 sentence pitch email to ${talent.name}. Address 
 Return ONLY the email body as plain text (no subject line, no preamble, no markdown).`;
 }
 
-export async function generateEmail({ talent, apiKey, context }: GenerateEmailOptions): Promise<string> {
+export async function generateEmail({ talent, context }: GenerateEmailOptions): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': getApiKey(),
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 600,
       messages: [{ role: 'user', content: buildPrompt(talent, context) }],
     }),

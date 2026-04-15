@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { TALENT } from './data/talent';
 import { applyFilters, EMPTY_FILTERS } from './utils/filters';
 import { searchTalent } from './utils/search';
+import { computeBenchmarks } from './utils/stats';
 import { rankTalent } from './api/rankTalent';
+import { applyExtractedFilters, extractBriefFilters, summarizeFilters } from './api/extractFilters';
 import type { Filters, RankingMap, Talent } from './types';
-import ApiBanner from './components/ApiBanner';
 import SiteHeader from './components/SiteHeader';
 import SearchBar from './components/SearchBar';
 import FilterBar from './components/FilterBar';
 import TalentGrid from './components/TalentGrid';
 import SelectionBar from './components/SelectionBar';
 import ContactModal from './components/ContactModal';
+import PipelineTrace, { type PipelineData } from './components/PipelineTrace';
+import ExtractedChips from './components/ExtractedChips';
 
 export default function App() {
-  const [apiKey, setApiKey] = useState('');
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [rankings, setRankings] = useState<RankingMap>({});
@@ -23,6 +25,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [contactOpen, setContactOpen] = useState(false);
+  const [pipeline, setPipeline] = useState<PipelineData | null>(null);
 
   const visibleResults = useMemo(
     () => applyFilters(baseResults, filters),
@@ -38,6 +41,7 @@ export default function App() {
     const matches = searchTalent(TALENT, query);
     setBaseResults(matches);
     setRankings({});
+    setPipeline(null);
     setStatus(
       query.trim()
         ? `Showing ${matches.length} match${matches.length === 1 ? '' : 'es'} for "${query.trim()}"`
@@ -67,26 +71,58 @@ export default function App() {
   async function runAiSearch() {
     const q = query.trim();
     if (!q) return;
-    if (!apiKey.trim()) {
-      setStatus('Please enter your Anthropic API key above.');
-      return;
-    }
 
     setLoading(true);
-    setStatus('Ranking talent…');
     setRankings({});
+    setPipeline(null);
 
     try {
-      const results = await rankTalent({ query: q, apiKey: apiKey.trim(), talent: TALENT });
+      setStatus('Step 1/3 · Parsing brief into structured criteria…');
+      const extracted = await extractBriefFilters({ query: q });
+
+      setStatus('Step 2/3 · Filtering dataset locally…');
+      const filtered = applyExtractedFilters(TALENT, extracted.filters);
+
+      if (filtered.length === 0) {
+        setPipeline({
+          interpretation: extracted.interpretation,
+          filtersSummary: summarizeFilters(extracted.filters),
+          filters: extracted.filters,
+          totalPool: TALENT.length,
+          afterFilter: 0,
+          ranked: 0,
+        });
+        setBaseResults([]);
+        setHasSearched(true);
+        setStatus('No creators match the extracted criteria. Try broadening your brief.');
+        return;
+      }
+
+      setStatus(`Step 3/3 · Ranking ${filtered.length} matches with benchmark-grounded reasons…`);
+      const benchmarks = computeBenchmarks(TALENT);
+      const results = await rankTalent({
+        query: q,
+        talent: filtered,
+        benchmarks,
+      });
+
       const nextRankings: RankingMap = {};
       results.forEach(r => { nextRankings[r.id] = r; });
-      const sorted = [...TALENT].sort(
+      const sorted = [...filtered].sort(
         (a, b) => (nextRankings[b.id]?.score ?? 0) - (nextRankings[a.id]?.score ?? 0)
       );
       setRankings(nextRankings);
       setBaseResults(sorted);
       setHasSearched(true);
-      setStatus(`Ranked ${results.length} creators for "${q}"`);
+      setPipeline({
+        interpretation: extracted.interpretation,
+        filtersSummary: summarizeFilters(extracted.filters),
+        filters: extracted.filters,
+        totalPool: TALENT.length,
+        afterFilter: filtered.length,
+        ranked: results.length,
+      });
+      setStatus(`Pipeline complete · ${results.length} creators ranked for "${q}"`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setStatus(`Error: ${message}`);
@@ -98,18 +134,16 @@ export default function App() {
   function clearAll() {
     setFilters(EMPTY_FILTERS);
     setQuery('');
-    setApiKey('');
     setRankings({});
     setBaseResults([...TALENT]);
     setHasSearched(true);
     setStatus('');
     setSelectedIds(new Set());
+    setPipeline(null);
   }
 
   return (
     <div className={`page${hasSearched ? '' : ' landing'}`}>
-      <ApiBanner value={apiKey} onChange={setApiKey} />
-
       <SiteHeader resultCount={hasSearched ? visibleResults.length : null} />
 
       <SearchBar
@@ -121,13 +155,19 @@ export default function App() {
 
       <FilterBar filters={filters} onChange={setFilters} onClear={clearAll} />
 
+      {pipeline && (
+        <>
+          <ExtractedChips filters={pipeline.filters} />
+          <PipelineTrace pipeline={pipeline} />
+        </>
+      )}
+
       <TalentGrid
         talents={visibleResults}
         rankings={rankings}
         hasSearched={hasSearched}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
-        apiKey={apiKey}
         context={query}
       />
 

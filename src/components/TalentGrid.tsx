@@ -7,7 +7,6 @@ interface Props {
   hasSearched: boolean;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
-  apiKey: string;
   context: string;
 }
 
@@ -17,7 +16,6 @@ export default function TalentGrid({
   hasSearched,
   selectedIds,
   onToggleSelect,
-  apiKey,
   context,
 }: Props) {
   if (!hasSearched) {
@@ -32,16 +30,18 @@ export default function TalentGrid({
     );
   }
 
+  const rankingsActive = Object.keys(rankings).length > 0;
+
   return (
     <div id="talent-grid">
-      {talents.map(t => (
+      {talents.map((t, index) => (
         <TalentCard
           key={t.id}
           talent={t}
           ranking={rankings[t.id]}
+          rank={rankingsActive ? index + 1 : undefined}
           selected={selectedIds.has(t.id)}
           onToggleSelect={onToggleSelect}
-          apiKey={apiKey}
           context={context}
         />
       ))}

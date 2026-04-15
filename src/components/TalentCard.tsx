@@ -8,9 +8,9 @@ import { researchTalent } from '../api/researchTalent';
 interface Props {
   talent: Talent;
   ranking?: Ranking;
+  rank?: number;
   selected: boolean;
   onToggleSelect: (id: number) => void;
-  apiKey: string;
   context: string;
 }
 
@@ -18,7 +18,14 @@ function initials(name: string): string {
   return name.split(' ').map(n => n[0]).join('');
 }
 
-export default function TalentCard({ talent, ranking, selected, onToggleSelect, apiKey, context }: Props) {
+export default function TalentCard({
+  talent,
+  ranking,
+  rank,
+  selected,
+  onToggleSelect,
+  context,
+}: Props) {
   const [emailText, setEmailText] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
@@ -28,25 +35,39 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchError, setResearchError] = useState('');
 
-  const isTop = !!ranking && ranking.score >= 85;
-  const isGood = !!ranking && ranking.score >= 70 && ranking.score < 85;
+  const tier = !ranking
+    ? 'none'
+    : ranking.score >= 85
+      ? 'best'
+      : ranking.score >= 70
+        ? 'strong'
+        : ranking.score >= 55
+          ? 'good'
+          : 'none';
+  const isTop = tier === 'best';
+  const showRank = !!ranking && rank != null && rank <= 3;
   const classes = [
     'card',
     isTop && 'top-pick',
-    (isTop || isGood) && 'has-badge',
+    tier !== 'none' && 'has-badge',
+    showRank && `rank-${rank}`,
     selected && 'selected',
   ].filter(Boolean).join(' ');
 
+  const tierBadge: Record<typeof tier, { label: string; icon: string; cls: string } | null> = {
+    best: { label: 'Best Match', icon: '🥇', cls: 'badge-best' },
+    strong: { label: 'Strong Match', icon: '🟢', cls: 'badge-strong' },
+    good: { label: 'Good Match', icon: '🟡', cls: 'badge-good' },
+    none: null,
+  };
+  const badge = tierBadge[tier];
+
   async function handleGenerate() {
-    if (!apiKey.trim()) {
-      setEmailError('Enter your Anthropic API key above to generate emails.');
-      return;
-    }
     setEmailError('');
     setEmailLoading(true);
     setEmailText('');
     try {
-      const text = await generateEmail({ talent, apiKey: apiKey.trim(), context });
+      const text = await generateEmail({ talent, context });
       setEmailText(text);
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : String(err));
@@ -56,15 +77,11 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
   }
 
   async function handleResearch() {
-    if (!apiKey.trim()) {
-      setResearchError('Enter your Anthropic API key above to research creators.');
-      return;
-    }
     setResearchError('');
     setResearchLoading(true);
     setResearchText('');
     try {
-      const text = await researchTalent({ talent, apiKey: apiKey.trim() });
+      const text = await researchTalent({ talent });
       setResearchText(text);
     } catch (err) {
       setResearchError(err instanceof Error ? err.message : String(err));
@@ -95,8 +112,12 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
 
   return (
     <div className={classes}>
-      {isTop && <div className="badge badge-ai">AI PICK</div>}
-      {isGood && <div className="badge badge-good">STRONG MATCH</div>}
+      {showRank && <div className="rank-badge">#{rank}</div>}
+      {badge && (
+        <div className={`badge ${badge.cls}`}>
+          <span className="badge-icon">{badge.icon}</span> {badge.label}
+        </div>
+      )}
 
       <label className="select-check" aria-label={`Select ${talent.name}`}>
         <input
@@ -167,8 +188,38 @@ export default function TalentCard({ talent, ranking, selected, onToggleSelect, 
 
       {ranking && (
         <div className={`ai-reason${isTop ? ' top' : ''}`}>
-          <p className="ai-reason-label">AI reason · {ranking.score}/100</p>
-          <p className="ai-reason-text">{ranking.reason}</p>
+          <div className="confidence-header">
+            <div>
+              <p className="ai-reason-label">AI confidence</p>
+              <p className="confidence-caption">
+                Composite of performance deltas vs niche benchmarks + brief fit
+              </p>
+            </div>
+            <p
+              className="confidence-score"
+              title="Based on performance vs niche/platform benchmarks + semantic match to the brief. Top picks score 85+."
+            >
+              {ranking.score}/100
+            </p>
+          </div>
+          <div className="confidence-bar" aria-hidden="true">
+            <div className="confidence-fill" style={{ width: `${ranking.score}%` }} />
+          </div>
+          {ranking.highlights.length > 0 && (
+            <ul className="highlights-list">
+              {ranking.highlights.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          )}
+          {ranking.comparative && (
+            <div className={`comparative-block ${rank === 1 ? 'is-top' : ''}`}>
+              <span className="comparative-label">
+                {rank != null && rank <= 3 ? `Why ranked #${rank}` : 'How this ranks vs peers'}
+              </span>
+              <p className="comparative-text">{ranking.comparative}</p>
+            </div>
+          )}
         </div>
       )}
 
