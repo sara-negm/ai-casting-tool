@@ -1,19 +1,9 @@
 import type { Talent } from '../types';
-import { getApiKey } from './apiKey';
+import { callClaude } from './claudeProxy';
 
 interface GenerateEmailOptions {
   talent: Talent;
   context?: string;
-}
-
-interface ClaudeContentBlock {
-  type: string;
-  text?: string;
-}
-
-interface ClaudeResponse {
-  content?: ClaudeContentBlock[];
-  error?: { message: string };
 }
 
 function buildPrompt(talent: Talent, context?: string): string {
@@ -40,22 +30,11 @@ Return ONLY the email body as plain text (no subject line, no preamble, no markd
 }
 
 export async function generateEmail({ talent, context }: GenerateEmailOptions): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getApiKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: buildPrompt(talent, context) }],
-    }),
+  const data = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 600,
+    messages: [{ role: 'user', content: buildPrompt(talent, context) }],
   });
 
-  const data = (await res.json()) as ClaudeResponse;
-  if (data.error) throw new Error(data.error.message);
   return (data.content ?? []).map(c => c.text ?? '').join('').trim();
 }

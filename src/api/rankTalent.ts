@@ -2,22 +2,12 @@ import type { Ranking, Talent } from '../types';
 import { followerLabel } from '../utils/followers';
 import type { Benchmarks } from '../utils/stats';
 import { formatBenchmarksForPrompt } from '../utils/stats';
-import { getApiKey } from './apiKey';
+import { callClaude } from './claudeProxy';
 
 interface RankTalentOptions {
   query: string;
   talent: Talent[];
   benchmarks?: Benchmarks;
-}
-
-interface ClaudeContentBlock {
-  type: string;
-  text?: string;
-}
-
-interface ClaudeResponse {
-  content?: ClaudeContentBlock[];
-  error?: { message: string };
 }
 
 function buildPrompt(query: string, talent: Talent[], benchmarks?: Benchmarks): string {
@@ -54,23 +44,11 @@ Every highlight must reference real numbers from the data. Every comparative mus
 }
 
 export async function rankTalent({ query, talent, benchmarks }: RankTalentOptions): Promise<Ranking[]> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getApiKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: buildPrompt(query, talent, benchmarks) }],
-    }),
+  const data = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 1500,
+    messages: [{ role: 'user', content: buildPrompt(query, talent, benchmarks) }],
   });
-
-  const data = (await res.json()) as ClaudeResponse;
-  if (data.error) throw new Error(data.error.message);
 
   const raw = (data.content ?? []).map(i => i.text ?? '').join('');
   const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()) as { rankings: Ranking[] };

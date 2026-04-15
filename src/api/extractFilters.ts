@@ -1,6 +1,6 @@
 import type { FollowerTier, Talent } from '../types';
 import { followerTier } from '../utils/followers';
-import { getApiKey } from './apiKey';
+import { callClaude } from './claudeProxy';
 
 export interface ExtractedFilters {
   platform: string | null;
@@ -15,16 +15,6 @@ export interface ExtractedFilters {
 export interface ExtractedBrief {
   filters: ExtractedFilters;
   interpretation: string;
-}
-
-interface ClaudeContentBlock {
-  type: string;
-  text?: string;
-}
-
-interface ClaudeResponse {
-  content?: ClaudeContentBlock[];
-  error?: { message: string };
 }
 
 function buildPrompt(query: string): string {
@@ -57,27 +47,14 @@ Rules:
 }
 
 export async function extractBriefFilters({ query }: { query: string }): Promise<ExtractedBrief> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getApiKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: buildPrompt(query) }],
-    }),
+  const data = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 500,
+    messages: [{ role: 'user', content: buildPrompt(query) }],
   });
 
-  const data = (await res.json()) as ClaudeResponse;
-  if (data.error) throw new Error(data.error.message);
-
   const raw = (data.content ?? []).map(b => b.text ?? '').join('').trim();
-  const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim()) as ExtractedBrief;
-  return parsed;
+  return JSON.parse(raw.replace(/```json|```/g, '').trim()) as ExtractedBrief;
 }
 
 export function applyExtractedFilters(talent: Talent[], f: ExtractedFilters): Talent[] {

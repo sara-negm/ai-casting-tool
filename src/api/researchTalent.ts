@@ -1,18 +1,8 @@
 import type { Talent } from '../types';
-import { getApiKey } from './apiKey';
+import { callClaude } from './claudeProxy';
 
 interface ResearchTalentOptions {
   talent: Talent;
-}
-
-interface ClaudeContentBlock {
-  type: string;
-  text?: string;
-}
-
-interface ClaudeResponse {
-  content?: ClaudeContentBlock[];
-  error?: { message: string };
 }
 
 function buildPrompt(talent: Talent): string {
@@ -29,24 +19,12 @@ Return a concise research brief as 4-6 short bullet points. Be specific and fact
 }
 
 export async function researchTalent({ talent }: ResearchTalentOptions): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getApiKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 1500,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
-      messages: [{ role: 'user', content: buildPrompt(talent) }],
-    }),
+  const data = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 1500,
+    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+    messages: [{ role: 'user', content: buildPrompt(talent) }],
   });
-
-  const data = (await res.json()) as ClaudeResponse;
-  if (data.error) throw new Error(data.error.message);
 
   const text = (data.content ?? [])
     .filter(b => b.type === 'text')
