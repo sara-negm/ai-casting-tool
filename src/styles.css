@@ -597,3 +597,117 @@ h1 {
   width: 100%;
   text-align: center;
 }
+
+/* ============================================================
+   MOBILE (≤ 720px)
+   ============================================================ */
+@media (max-width: 720px) {
+  body { padding: 0.875rem; }
+
+  h1 { font-size: 20px; }
+
+  /* API banner — stack label/hint above a full-width input */
+  #api-banner {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 10px 12px;
+  }
+  #api-banner label { flex: 0 0 auto; }
+  #api-key-input { flex: 1 1 100%; order: 3; }
+  #api-banner .hint { flex: 0 0 auto; font-size: 10px; }
+
+  /* Header — stack title and count */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* Search — full width input + button stacked */
+  .search-row { flex-direction: column; }
+  #search-input { font-size: 14px; }
+  #search-btn {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+
+  /* Filters — full-width selects */
+  .filters { flex-direction: column; gap: 6px; }
+  .filters select,
+  #clear-btn {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Cards — sections stack full width */
+  #talent-grid { gap: 12px; }
+  .card {
+    padding: 16px;
+    gap: 12px;
+  }
+  .card.has-badge { padding-top: 28px; }
+  .card > .select-check { margin-right: 0; }
+  .card-header,
+  .card .tags,
+  .card .stats,
+  .card .meta,
+  .card .card-actions {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .card .card-actions {
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .card .card-actions > * {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .stats {
+    padding: 10px 8px;
+  }
+  .stat-val { font-size: 15px; }
+  .name { font-size: 15px; }
+  .past-brands { font-size: 11px; }
+
+  /* Selection bar — full-width sticky footer */
+  .selection-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    padding: 10px 14px;
+    border-radius: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .selection-count { font-size: 12px; }
+  .selection-clear,
+  .selection-contact {
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  /* Contact modal — tighter padding on narrow screens */
+  .modal {
+    padding: 18px;
+    gap: 14px;
+    max-height: calc(100vh - 1.5rem);
+  }
+  .modal-header h2 { font-size: 16px; }
+  .modal-field input,
+  .modal-field textarea { font-size: 14px; }
+  .modal-footer { flex-wrap: wrap; }
+  .modal-cancel,
+  .modal-send { flex: 1 1 auto; }
+
+  /* Empty state — less vertical space */
+  .empty-state { min-height: 30vh; }
+}
