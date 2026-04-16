@@ -155,6 +155,8 @@ export default function App() {
 
       <FilterBar filters={filters} onChange={setFilters} onClear={clearAll} />
 
+      {status && <p id="ai-status">{status}</p>}
+
       {pipeline && (
         <>
           <ExtractedChips filters={pipeline.filters} />
@@ -170,8 +172,6 @@ export default function App() {
         onToggleSelect={toggleSelect}
         context={query}
       />
-
-      <p id="ai-status">{status}</p>
 
       <SelectionBar
         count={selectedIds.size}

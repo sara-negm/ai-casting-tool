@@ -13,9 +13,9 @@ export default function SearchBar({ value, onChange, onAiSearch, loading }: Prop
         placeholder='Search by name, niche, brand… or describe who you need for AI ranking'
         value={value}
         onChange={e => onChange(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') onAiSearch(); }}
+        onKeyDown={e => { if (e.key === 'Enter' && value.trim()) onAiSearch(); }}
       />
-      <button id="search-btn" onClick={onAiSearch} disabled={loading}>
+      <button id="search-btn" onClick={onAiSearch} disabled={loading || !value.trim()}>
         {loading ? 'Ranking…' : 'Search with AI →'}
       </button>
     </div>
