@@ -4,6 +4,19 @@ import { followerLabel } from '../utils/followers';
 import { profileUrl } from '../utils/socialLinks';
 import { generateEmail } from '../api/generateEmail';
 import { researchTalent } from '../api/researchTalent';
+import {
+  Trophy,
+  CircleCheck,
+  Circle,
+  Smartphone,
+  BarChart3,
+  Search,
+  Sparkles,
+  Check,
+  Copy,
+  ExternalLink,
+  X,
+} from 'lucide-react';
 
 interface Props {
   talent: Talent;
@@ -54,10 +67,10 @@ export default function TalentCard({
     selected && 'selected',
   ].filter(Boolean).join(' ');
 
-  const tierBadge: Record<typeof tier, { label: string; icon: string; cls: string } | null> = {
-    best: { label: 'Best Match', icon: '🥇', cls: 'badge-best' },
-    strong: { label: 'Strong Match', icon: '🟢', cls: 'badge-strong' },
-    good: { label: 'Good Match', icon: '🟡', cls: 'badge-good' },
+  const tierBadge: Record<typeof tier, { label: string; icon: React.ReactNode; cls: string } | null> = {
+    best: { label: 'Best Match', icon: <Trophy size={12} />, cls: 'badge-best' },
+    strong: { label: 'Strong Match', icon: <CircleCheck size={12} />, cls: 'badge-strong' },
+    good: { label: 'Good Match', icon: <Circle size={12} />, cls: 'badge-good' },
     none: null,
   };
   const badge = tierBadge[tier];
@@ -142,23 +155,30 @@ export default function TalentCard({
         <span className="tag">{talent.gender}</span>
       </div>
 
-      <div className="stats">
-        <div>
-          <p className="stat-val">{followerLabel(talent.followers)}</p>
-          <p className="stat-label">Followers</p>
+      <div className="data-section">
+        <div className="data-section-header">
+          <span className="data-group-label">Performance Overview</span>
+          <span className="data-legend"><Smartphone size={9} /> Platform <BarChart3 size={9} /> Ad Warehouse</span>
         </div>
-        <div className="stat-divider">
-          <p className="stat-val">{talent.engagement}%</p>
-          <p className="stat-label">Eng. rate</p>
+        <div className="stats stats-wide">
+          <div>
+            <p className="stat-val">{followerLabel(talent.followers)}</p>
+            <p className="stat-label">Followers</p>
+          </div>
+          <div className="stat-divider ranking-driver">
+            <p className="stat-val">{talent.engagement}%</p>
+            <p className="stat-label">Eng. rate</p>
+          </div>
+          <div className="stat-divider ranking-driver">
+            <p className="stat-val">{talent.adPerformance.ctr}</p>
+            <p className="stat-label">Ad CTR</p>
+          </div>
+          <div>
+            <p className="stat-val">{talent.adPerformance.completionRate}</p>
+            <p className="stat-label">Completion</p>
+          </div>
         </div>
-        <div>
-          <p className="stat-val">{talent.adPerformance.ctr}</p>
-          <p className="stat-label">Ad CTR</p>
-        </div>
-      </div>
-
-      <div className="meta">
-        <p>{talent.audienceDemographic}</p>
+        <p className="data-audience">{talent.audienceDemographic}</p>
       </div>
 
       <div className="card-actions">
@@ -168,21 +188,21 @@ export default function TalentCard({
           target="_blank"
           rel="noopener noreferrer"
         >
-          View profile ↗
+          <ExternalLink size={13} /> View profile
         </a>
         <button
           className="link-btn"
           onClick={handleResearch}
           disabled={researchLoading}
         >
-          {researchLoading ? 'Researching…' : '🔎 Research with AI'}
+          {researchLoading ? 'Researching…' : <><Search size={13} /> Research with AI</>}
         </button>
         <button
           className="generate-btn"
           onClick={handleGenerate}
           disabled={emailLoading}
         >
-          {emailLoading ? 'Writing…' : '✨ Generate outreach email'}
+          {emailLoading ? 'Writing…' : <><Sparkles size={13} /> Generate outreach email</>}
         </button>
       </div>
 
@@ -233,7 +253,7 @@ export default function TalentCard({
         <div className="research-summary">
           <div className="research-summary-header">
             <p className="research-summary-label">Web research · {talent.name}</p>
-            <button className="email-dismiss" onClick={handleDismissResearch} aria-label="Dismiss">×</button>
+            <button className="email-dismiss" onClick={handleDismissResearch} aria-label="Dismiss"><X size={16} /></button>
           </div>
           <pre className="research-summary-text">{researchText}</pre>
         </div>
@@ -251,9 +271,9 @@ export default function TalentCard({
             <p className="generated-email-label">Outreach draft for {talent.name}</p>
             <div className="generated-email-actions">
               <button className="email-copy" onClick={handleCopy}>
-                {copied ? 'Copied ✓' : 'Copy'}
+                {copied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
               </button>
-              <button className="email-dismiss" onClick={handleDismiss} aria-label="Dismiss">×</button>
+              <button className="email-dismiss" onClick={handleDismiss} aria-label="Dismiss"><X size={16} /></button>
             </div>
           </div>
           <pre className="generated-email-text">{emailText}</pre>

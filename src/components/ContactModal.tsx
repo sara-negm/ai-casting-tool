@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Talent } from '../types';
+import { Check, X } from 'lucide-react';
 
 interface Props {
   recipients: Talent[];
@@ -36,7 +37,7 @@ export default function ContactModal({ recipients, onClose, onSent }: Props) {
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Contact creators</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close"><X size={18} /></button>
         </div>
 
         <div className="modal-recipients">
@@ -74,7 +75,7 @@ export default function ContactModal({ recipients, onClose, onSent }: Props) {
 
         <div className="modal-footer">
           {sent ? (
-            <p className="modal-success">Message sent to {recipients.length} creator{recipients.length === 1 ? '' : 's'} ✓</p>
+            <p className="modal-success"><Check size={14} /> Message sent to {recipients.length} creator{recipients.length === 1 ? '' : 's'}</p>
           ) : (
             <>
               <button className="modal-cancel" onClick={onClose} disabled={sending}>Cancel</button>
